@@ -1,0 +1,33 @@
+# Binarios
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+# Binario principal (si cambias el nombre, ajústalo aquí)
+main
+
+# Directorios de dependencias
+vendor/
+
+# Archivos de entorno (Credenciales/Claves API)
+.env
+.env.local
+.env.*.local
+
+# Archivos de cobertura de pruebas
+*.out
+coverage.
+*.coverprofile
+profile.cov
+
+# Archivos de IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Go workspace file
+go.work
+go.work.sum
