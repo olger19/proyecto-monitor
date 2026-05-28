@@ -1,6 +1,24 @@
 import { spawn } from 'child_process'
+import { existsSync } from 'fs'
 import { join } from 'path'
 import { app, BrowserWindow, ipcMain } from 'electron'
+
+function getEnginePath() {
+  const devPath = join(__dirname, '../../resources/bin/engine.exe')
+  const packagedPath = join(
+    process.resourcesPath,
+    'app.asar.unpacked',
+    'resources',
+    'bin',
+    'engine.exe'
+  )
+  const legacyPackagedPath = join(process.resourcesPath, 'bin', 'engine.exe')
+  // En desarrollo, usamos el path directo. En producción, buscamos primero en app.asar.unpacked y luego en el path legacy.
+  if (!app.isPackaged) return devPath
+  if (existsSync(packagedPath)) return packagedPath
+  if (existsSync(legacyPackagedPath)) return legacyPackagedPath
+  return packagedPath
+}
 
 function createWindow() {
   const preloadPath = join(__dirname, '../preload/index.js')
@@ -27,10 +45,8 @@ function createWindow() {
   mainWindow.webContents.openDevTools()
 
   ipcMain.on('run-test', () => {
-    const isDev = !app.isPackaged
-    const enginePath = isDev
-      ? join(__dirname, '../../resources/bin/engine.exe')
-      : join(process.resourcesPath, 'bin/engine.exe')
+    const enginePath = getEnginePath()
+    console.log('Ejecutando engine desde:', enginePath)
 
     const engine = spawn(enginePath)
 
@@ -65,6 +81,11 @@ function createWindow() {
     // Si el proceso de Go falla al iniciar
     engine.on('error', (err) => {
       console.error('Error al iniciar el motor de Go:', err)
+      mainWindow.webContents.send('engine-data', {
+        type: 'error',
+        phase: 'engine-start',
+        message: err.message
+      })
     })
   })
 }
