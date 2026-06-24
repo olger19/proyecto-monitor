@@ -3,6 +3,8 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import { app, BrowserWindow, ipcMain } from 'electron'
 
+let activeEngine = null
+
 function getEnginePath() {
   const devPath = join(__dirname, '../../resources/bin/engine.exe')
   const packagedPath = join(
@@ -45,47 +47,61 @@ function createWindow() {
   mainWindow.webContents.openDevTools()
 
   ipcMain.on('run-test', () => {
+    if (activeEngine) {
+      console.log('Deteniendo instancia previa del motor Go...')
+      try {
+        activeEngine.kill()
+      } catch (err) {
+        console.error('Error al detener motor Go:', err)
+      }
+      activeEngine = null
+    }
+
     const enginePath = getEnginePath()
     console.log('Ejecutando engine desde:', enginePath)
 
-    const engine = spawn(enginePath)
+    try {
+      activeEngine = spawn(enginePath)
+    } catch (err) {
+      console.error('Error crítico al hacer spawn del motor:', err)
+      mainWindow.webContents.send('engine-data', {
+        type: 'error',
+        phase: 'engine-spawn',
+        message: err.message
+      })
+      return
+    }
 
-    // Dentro de ipcMain.on('run-test', ...)
-    engine.stdout.on('data', (data) => {
-      // Convertimos el buffer a string y lo separamos por saltos de línea
+    activeEngine.stdout.on('data', (data) => {
       const chunks = data.toString().split('\n')
-
       chunks.forEach((chunk) => {
         const trimmedChunk = chunk.trim()
         if (trimmedChunk) {
           console.log('RADAR MAIN - Dato crudo de Go:', trimmedChunk)
           try {
             const payload = JSON.parse(trimmedChunk)
-            // Enviamos al renderer
             mainWindow.webContents.send('engine-data', payload)
           } catch (e) {
-            // Si no es un JSON válido (ej: un log de Go), lo ignoramos o lo logueamos
             console.log('No es JSON:', trimmedChunk)
-            console.log('Mensaje no-JSON del motor:', trimmedChunk)
             console.log(e)
           }
         }
       })
     })
 
-    engine.on('close', () => {
-      // Usamos el mismo canal para el fin del test
+    activeEngine.on('close', () => {
       mainWindow.webContents.send('engine-data', { type: 'done', phase: 'finished' })
+      activeEngine = null
     })
 
-    // Si el proceso de Go falla al iniciar
-    engine.on('error', (err) => {
+    activeEngine.on('error', (err) => {
       console.error('Error al iniciar el motor de Go:', err)
       mainWindow.webContents.send('engine-data', {
         type: 'error',
         phase: 'engine-start',
         message: err.message
       })
+      activeEngine = null
     })
   })
 }
@@ -93,7 +109,18 @@ function createWindow() {
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
+  if (activeEngine) {
+    activeEngine.kill()
+    activeEngine = null
+  }
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('will-quit', () => {
+  if (activeEngine) {
+    activeEngine.kill()
+    activeEngine = null
+  }
 })
 
 app.on('activate', () => {

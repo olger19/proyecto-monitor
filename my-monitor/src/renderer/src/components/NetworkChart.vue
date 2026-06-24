@@ -1,5 +1,5 @@
 <template>
-  <div class="chart-container">
+  <div class="chart-container w-full h-full">
     <Line :data="chartData" :options="chartOptions" />
   </div>
 </template>
@@ -39,9 +39,62 @@ const { chartData } = defineProps({
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  animation: { duration: 0 }, // Para que sea instantáneo como el Admin de Tareas
+  animation: { duration: 0 }, // Instant update
+  plugins: {
+    legend: {
+      display: false // Hide built-in legend (using custom dashboard legend)
+    },
+    tooltip: {
+      enabled: true,
+      backgroundColor: '#1e293b',
+      titleColor: '#94a3b8',
+      bodyColor: '#f8fafc',
+      borderColor: '#334155',
+      borderWidth: 1,
+      padding: 10,
+      bodyFont: {
+        family: 'Inter'
+      },
+      titleFont: {
+        family: 'Inter',
+        weight: 'bold'
+      }
+    }
+  },
   scales: {
-    y: { beginAtZero: true, title: { display: true, text: 'Mbps' } }
+    x: {
+      grid: {
+        color: 'rgba(255, 255, 255, 0.03)',
+        borderColor: 'transparent'
+      },
+      ticks: {
+        color: '#64748b',
+        font: {
+          family: 'Inter',
+          size: 10
+        }
+      }
+    },
+    y: {
+      beginAtZero: true,
+      grid: {
+        color: 'rgba(255, 255, 255, 0.03)',
+        borderColor: 'transparent'
+      },
+      ticks: {
+        color: '#64748b',
+        font: {
+          family: 'Inter',
+          size: 10
+        }
+      }
+    }
   }
 }
 </script>
+
+<style scoped>
+.chart-container {
+  position: relative;
+}
+</style>
