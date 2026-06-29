@@ -15,6 +15,7 @@ const {
   contractedSpeed,
   historicalPeaks,
   chartData,
+  currentIcr,
   startTest
 } = useNetworkEngine()
 
@@ -204,10 +205,11 @@ const avgUpload = computed(() => {
               <h2
                 class="text-5xl font-headline font-extrabold text-white tracking-tight leading-tight"
               >
-                Velocidad Actual: <span class="text-primary">{{ downloadSpeed }} Mbps</span>
+                {{ currentIcr }}% de Disponibilidad
               </h2>
               <p class="text-on-surface-variant font-body text-lg max-w-md">
-                El rendimiento de tu red se encuentra actualmente dentro del rango de tu velocidad
+                Tu velocidad actual es de
+                <span class="text-primary">{{ downloadSpeed }} Mbps</span> para una velocidad
                 contratada de {{ contractedSpeed }}.
               </p>
             </div>

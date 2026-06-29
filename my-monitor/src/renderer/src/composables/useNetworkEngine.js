@@ -8,10 +8,11 @@ export function useNetworkEngine() {
   const status = ref('Listo')
   const contractedSpeed = ref('600 Mbps')
 
-  // Historial de picos de pruebas completadas
-  const historicalPeaks = ref([
-    { time: 'Inicializado', download: '0.0 Mbps', upload: '0.0 Mbps', status: 'MEDIO' }
-  ])
+  // Historial de picos de pruebas completadas (cargados dinámicamente de BD)
+  const historicalPeaks = ref([])
+
+  // ICR de la prueba actual o más reciente
+  const currentIcr = ref(100.0)
 
   // Configuración de la gráfica
   const chartData = ref({
@@ -43,6 +44,51 @@ export function useNetworkEngine() {
     ]
   })
 
+  // Cargar las últimas 5 mediciones desde la base de datos
+  const loadRecentTests = async () => {
+    if (window.electron && window.electron.getRecentTests) {
+      try {
+        const tests = await window.electron.getRecentTests()
+        if (tests && tests.length > 0) {
+          // Extraer ICR de la medición más reciente
+          const latest = tests[0]
+          const rawIcr =
+            latest.icr !== undefined && latest.icr !== null
+              ? latest.icr
+              : latest.status === 'ÓPTIMO'
+                ? 1.0
+                : 0.0
+          currentIcr.value = parseFloat((rawIcr * 100).toFixed(1))
+
+          historicalPeaks.value = tests.map((test) => {
+            let ts = test.timestamp
+            if (ts && !ts.includes('T') && !ts.includes('Z')) {
+              ts = ts.replace(' ', 'T') + 'Z'
+            }
+            const dateObj = new Date(ts)
+            const formattedTime = dateObj.toLocaleTimeString('es-ES', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            })
+            const formattedDate = dateObj.toLocaleDateString('es-ES', {
+              day: 'numeric',
+              month: 'short'
+            })
+            return {
+              time: `${formattedDate} ${formattedTime}`,
+              download: `${parseFloat(Number(test.download).toFixed(1))} Mbps`,
+              upload: `${parseFloat(Number(test.upload).toFixed(1))} Mbps`,
+              status: test.status
+            }
+          })
+        }
+      } catch (err) {
+        console.error('Error al cargar mediciones recientes:', err)
+      }
+    }
+  }
+
   // Iniciar la prueba (ejecuta el binario de Go)
   const startTest = () => {
     status.value = 'Iniciando motor...'
@@ -50,7 +96,7 @@ export function useNetworkEngine() {
     downloadSpeed.value = 0
     uploadSpeed.value = 0
     if (window.electron) {
-      window.electron.runTest()
+      window.electron.runTest(contractedSpeed.value)
     }
   }
 
@@ -116,22 +162,8 @@ export function useNetworkEngine() {
       // 1. Agregar punto a la gráfica con la velocidad final consolidada
       updateChart()
 
-      // 2. Registrar pico histórico con datos reales al terminar el ciclo completo
-      const numericContracted = parseFloat(contractedSpeed.value) || 600
-      const isOptimal = downloadSpeed.value >= numericContracted * 0.8
-
-      const newPeak = {
-        time: new Date().toLocaleTimeString('es-ES', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        }),
-        download: `${downloadSpeed.value} Mbps`,
-        upload: `${uploadSpeed.value} Mbps`,
-        status: isOptimal ? 'ÓPTIMO' : 'MODERADO'
-      }
-
-      historicalPeaks.value = [newPeak, ...historicalPeaks.value].slice(0, 5)
+      // 2. Recargar las mediciones recientes de la base de datos (guardado instantáneo)
+      loadRecentTests()
     } else if (type === 'error') {
       status.value = `Error: ${payload.data || payload.message || 'Fallo del motor'}`
     }
@@ -142,6 +174,9 @@ export function useNetworkEngine() {
     isMounted = true
 
     if (window.electron) {
+      // Cargar mediciones persistentes al iniciar
+      loadRecentTests()
+
       window.electron.onData((payload) => {
         if (isMounted) {
           handleData(payload)
@@ -165,6 +200,7 @@ export function useNetworkEngine() {
     contractedSpeed,
     historicalPeaks,
     chartData,
+    currentIcr,
     startTest
   }
 }

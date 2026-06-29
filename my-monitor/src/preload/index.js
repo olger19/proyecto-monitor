@@ -2,7 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 try {
   contextBridge.exposeInMainWorld('electron', {
-    runTest: () => ipcRenderer.send('run-test'),
+    runTest: (contracted) => ipcRenderer.send('run-test', contracted),
+    getWeeklySummary: () => ipcRenderer.invoke('get-weekly-summary'),
+    downloadPdfReport: () => ipcRenderer.invoke('download-pdf-report'),
+    getRecentTests: () => ipcRenderer.invoke('get-recent-tests'),
     onData: (callback) => {
       // Eliminamos todos los escuchadores previos para evitar duplicidad
       ipcRenderer.removeAllListeners('engine-data')

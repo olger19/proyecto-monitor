@@ -41,44 +41,39 @@ func main() {
 	}
 	s := targets[0]
 
-	// Bucle infinito de pruebas
-	for {
-		// Resetear métricas de la prueba actual
-		s.DLSpeed = 0
-		s.ULSpeed = 0
-		s.Latency = 0
-		s.Jitter = 0
+	// Resetear métricas de la prueba actual
+	s.DLSpeed = 0
+	s.ULSpeed = 0
+	s.Latency = 0
+	s.Jitter = 0
 
-		// 1. Medir Latencia (Ping) e Inestabilidad (Jitter)
-		err = s.PingTest(func(latency time.Duration) {})
-		if err != nil {
-			emit("error", "ping", err.Error())
-		} else {
-			emit("progress", "ping", map[string]interface{}{
-				"latency": float64(s.Latency) / float64(time.Millisecond),
-				"jitter":  float64(s.Jitter) / float64(time.Millisecond),
-			})
-		}
-
-		// 2. Medir Descarga (Download)
-		err = s.DownloadTest()
-		if err != nil {
-			emit("error", "download", err.Error())
-		} else {
-			emit("progress", "download", s.DLSpeed.Mbps())
-		}
-
-		// 3. Medir Subida (Upload)
-		err = s.UploadTest()
-		if err != nil {
-			emit("error", "upload", err.Error())
-		} else {
-			emit("progress", "upload", s.ULSpeed.Mbps())
-		}
-
-		// Indicar fin del ciclo de pruebas
-		emit("done", "finished", nil)
-
-		time.Sleep(3 * time.Second) // Pausa obligatoria entre pruebas
+	// 1. Medir Latencia (Ping) e Inestabilidad (Jitter)
+	err = s.PingTest(func(latency time.Duration) {})
+	if err != nil {
+		emit("error", "ping", err.Error())
+	} else {
+		emit("progress", "ping", map[string]interface{}{
+			"latency": float64(s.Latency) / float64(time.Millisecond),
+			"jitter":  float64(s.Jitter) / float64(time.Millisecond),
+		})
 	}
+
+	// 2. Medir Descarga (Download)
+	err = s.DownloadTest()
+	if err != nil {
+		emit("error", "download", err.Error())
+	} else {
+		emit("progress", "download", s.DLSpeed.Mbps())
+	}
+
+	// 3. Medir Subida (Upload)
+	err = s.UploadTest()
+	if err != nil {
+		emit("error", "upload", err.Error())
+	} else {
+		emit("progress", "upload", s.ULSpeed.Mbps())
+	}
+
+	// Indicar fin del ciclo de pruebas
+	emit("done", "finished", nil)
 }

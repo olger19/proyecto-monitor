@@ -17,6 +17,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "better-sqlite3": "^12.11.1",
     "chart.js": "^4.5.1",
     "vue-chartjs": "^5.3.3"
   },
