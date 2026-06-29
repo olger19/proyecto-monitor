@@ -37,14 +37,15 @@ function createWindow() {
     }
   })
 
-  // 1. AHORA SÍ: Cargamos la aplicación (Vite en desarrollo, archivo en producción)
+  // Cargamos la aplicación (Vite en desarrollo, archivo en producción)
   if (process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  mainWindow.webContents.openDevTools()
+  // Comentar o eliminar esta línea para que no se abra la consola de DevTools automáticamente:
+  // mainWindow.webContents.openDevTools()
 
   ipcMain.on('run-test', () => {
     if (activeEngine) {
