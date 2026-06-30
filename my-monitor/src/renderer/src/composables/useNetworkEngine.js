@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 export function useNetworkEngine() {
   const downloadSpeed = ref(0)
@@ -13,6 +13,10 @@ export function useNetworkEngine() {
 
   // ICR de la prueba actual o más reciente
   const currentIcr = ref(100.0)
+
+  // Control de monitoreo continuo (activo por defecto)
+  const isContinuous = ref(true)
+  let continuousTimer = null
 
   // Configuración de la gráfica
   const chartData = ref({
@@ -91,6 +95,12 @@ export function useNetworkEngine() {
 
   // Iniciar la prueba (ejecuta el binario de Go)
   const startTest = () => {
+    // Cancelar cualquier temporizador activo previo para evitar ejecuciones duplicadas
+    if (continuousTimer) {
+      clearTimeout(continuousTimer)
+      continuousTimer = null
+    }
+
     status.value = 'Iniciando motor...'
     // Resetear velocidades actuales en interfaz
     downloadSpeed.value = 0
@@ -164,10 +174,38 @@ export function useNetworkEngine() {
 
       // 2. Recargar las mediciones recientes de la base de datos (guardado instantáneo)
       loadRecentTests()
+
+      // 3. Si el monitoreo continuo está activo, programar la próxima prueba en 5 minutos
+      if (isContinuous.value) {
+        status.value = 'En espera (Monitoreo Continuo)'
+        continuousTimer = setTimeout(
+          () => {
+            startTest()
+          },
+          5 * 60 * 1000
+        ) // 5 minutos de espera (timeSleep)
+      }
     } else if (type === 'error') {
       status.value = `Error: ${payload.data || payload.message || 'Fallo del motor'}`
     }
   }
+
+  // Observador para detener o programar temporizadores si se cambia el switch de monitoreo continuo
+  watch(isContinuous, (active) => {
+    if (!active) {
+      if (continuousTimer) {
+        clearTimeout(continuousTimer)
+        continuousTimer = null
+      }
+      if (status.value.startsWith('En espera')) {
+        status.value = 'Listo'
+      }
+    } else {
+      if (status.value === 'Listo') {
+        startTest()
+      }
+    }
+  })
 
   let isMounted = false
   onMounted(() => {
@@ -182,13 +220,17 @@ export function useNetworkEngine() {
           handleData(payload)
         }
       })
-      // Auto-iniciar prueba de velocidad al montar el componente
+      // Auto-iniciar prueba de velocidad al montar el componente (iniciará el bucle continuo)
       startTest()
     }
   })
 
   onUnmounted(() => {
     isMounted = false
+    if (continuousTimer) {
+      clearTimeout(continuousTimer)
+      continuousTimer = null
+    }
   })
 
   return {
@@ -201,6 +243,7 @@ export function useNetworkEngine() {
     historicalPeaks,
     chartData,
     currentIcr,
+    isContinuous,
     startTest
   }
 }
