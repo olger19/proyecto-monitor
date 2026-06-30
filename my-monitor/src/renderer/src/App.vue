@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useNetworkEngine } from './composables/useNetworkEngine'
 import NetworkChart from './components/NetworkChart.vue'
 import WeeklyHistory from './components/WeeklyHistory.vue'
+import ContractConfig from './components/ContractConfig.vue'
 
 const currentTab = ref('speed')
 
@@ -16,6 +17,7 @@ const {
   historicalPeaks,
   chartData,
   currentIcr,
+  isContinuous,
   startTest
 } = useNetworkEngine()
 
@@ -79,11 +81,19 @@ const avgUpload = computed(() => {
         </a>
         <a
           :class="[
-            'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all cursor-not-allowed text-slate-500'
+            'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all cursor-pointer',
+            currentTab === 'contract'
+              ? 'text-blue-400 font-bold bg-slate-800/50'
+              : 'text-slate-400 hover:text-blue-400'
           ]"
           href="#"
+          @click.prevent="currentTab = 'contract'"
         >
-          <span class="material-symbols-outlined">edit_document</span>
+          <span
+            class="material-symbols-outlined"
+            :style="currentTab === 'contract' ? 'font-variation-settings: \'FILL\' 1' : ''"
+            >edit_document</span
+          >
           <span>Config. de Contrato</span>
         </a>
         <a
@@ -120,6 +130,23 @@ const avgUpload = computed(() => {
           </div>
         </div>
 
+        <!-- Continuous Monitor Toggle (Only visible when speed tab is active) -->
+        <div
+          v-if="currentTab === 'speed'"
+          class="mt-6 px-4 flex items-center justify-between bg-slate-900/40 p-4 rounded-xl border border-slate-800"
+        >
+          <div class="flex flex-col">
+            <span class="text-xs font-bold text-white font-body">Monitoreo Continuo</span>
+            <span class="text-[10px] text-slate-400 font-body">Repetir cada 5 min</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input v-model="isContinuous" type="checkbox" class="sr-only peer" />
+            <div
+              class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 peer-checked:after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+            ></div>
+          </label>
+        </div>
+
         <!-- Start/Stop CTA (Only visible when speed tab is active) -->
         <div v-if="currentTab === 'speed'" class="mt-6 px-4">
           <button
@@ -128,7 +155,9 @@ const avgUpload = computed(() => {
             @click="startTest"
           >
             <span class="material-symbols-outlined text-sm">play_arrow</span>
-            <span>{{ status === 'Listo' ? 'Iniciar Medición' : status }}</span>
+            <span>{{
+              status === 'Listo' || status.startsWith('En espera') ? 'Iniciar Medición' : status
+            }}</span>
           </button>
         </div>
       </div>
@@ -430,6 +459,11 @@ const avgUpload = computed(() => {
       <!-- Weekly History View -->
       <div v-else-if="currentTab === 'history'">
         <WeeklyHistory />
+      </div>
+
+      <!-- Contract Config View -->
+      <div v-else-if="currentTab === 'contract'">
+        <ContractConfig />
       </div>
     </main>
   </div>
