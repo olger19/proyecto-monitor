@@ -4,6 +4,7 @@ import { useNetworkEngine } from './composables/useNetworkEngine'
 import NetworkChart from './components/NetworkChart.vue'
 import WeeklyHistory from './components/WeeklyHistory.vue'
 import ContractConfig from './components/ContractConfig.vue'
+import { calculateAverageSpeed } from './utils/chartHelper'
 
 const currentTab = ref('speed')
 
@@ -23,17 +24,11 @@ const {
 
 // Compute dynamic average speeds from data points in the chart
 const avgDownload = computed(() => {
-  const activeData = chartData.value.datasets[0].data.filter((v) => v > 0)
-  if (activeData.length === 0) return downloadSpeed.value || 0
-  const sum = activeData.reduce((a, b) => a + b, 0)
-  return parseFloat((sum / activeData.length).toFixed(1))
+  return calculateAverageSpeed(chartData.value.datasets[0].data, downloadSpeed.value)
 })
 
 const avgUpload = computed(() => {
-  const activeData = chartData.value.datasets[1].data.filter((v) => v > 0)
-  if (activeData.length === 0) return uploadSpeed.value || 0
-  const sum = activeData.reduce((a, b) => a + b, 0)
-  return parseFloat((sum / activeData.length).toFixed(1))
+  return calculateAverageSpeed(chartData.value.datasets[1].data, uploadSpeed.value)
 })
 </script>
 

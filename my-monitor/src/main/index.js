@@ -3,6 +3,7 @@ import { existsSync, writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { initDatabase, saveMeasurement, getWeeklySummary, getRawMeasurements } from './db'
+import { calculateIcr } from './icrHelper'
 
 let activeEngine = null
 
@@ -121,11 +122,7 @@ function createWindow() {
         const status = isOptimal ? 'ÓPTIMO' : 'MODERADO'
 
         // Calcular ICR = (W1 * Ev) + (W2 * E8)
-        const w1 = 0.5
-        const w2 = 0.5
-        const ev = Math.min(1.0, lastDownload / numericContracted)
-        const e8 = isOptimal ? 1.0 : 0.0
-        const icrVal = w1 * ev + w2 * e8
+        const icrVal = calculateIcr(lastDownload, numericContracted)
 
         saveMeasurement({
           download: lastDownload,
