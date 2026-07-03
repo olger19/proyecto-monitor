@@ -49,10 +49,91 @@
                 <span class="text-slate-400 font-body font-medium">Mbps</span>
               </div>
               <button
-                class="text-blue-400 font-body text-sm font-semibold hover:bg-slate-700 px-4 py-2 rounded-lg transition-colors"
+                class="text-blue-400 font-body text-sm font-semibold hover:bg-slate-700 px-4 py-2 rounded-lg transition-colors border border-blue-500/25"
               >
                 Editar Límite
               </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Signature Config Card (Elevated Focus) -->
+        <section
+          class="bg-slate-850 dark:bg-slate-800 rounded-[0.75rem] p-8 shadow-lg border border-slate-700 flex flex-col md:flex-row gap-8 items-start relative overflow-hidden"
+        >
+          <div
+            class="flex-shrink-0 bg-blue-900/50 text-blue-300 h-16 w-16 rounded-full flex items-center justify-center border border-blue-800"
+          >
+            <span
+              class="material-symbols-outlined text-3xl"
+              style="font-variation-settings: 'FILL' 1"
+              >edit_document</span
+            >
+          </div>
+          <div class="flex-1 w-full">
+            <h3 class="text-xl font-headline font-bold text-slate-100 mb-1">
+              Firma Digitalizada del Director
+            </h3>
+            <p class="text-slate-400 font-body text-sm mb-6 leading-relaxed">
+              Suba una fotografía o firma escaneada (.png, .jpg o .jpeg) del director de la
+              institución. Esta firma se estampará automáticamente en el reporte de rendimiento
+              semanal exportado en PDF.
+            </p>
+
+            <div
+              class="flex flex-col sm:flex-row items-center gap-6 bg-slate-900/50 p-6 rounded-[0.75rem] border border-slate-700"
+            >
+              <!-- Preview Area -->
+              <div
+                class="w-full sm:w-48 h-24 bg-slate-950/80 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden p-2 shrink-0"
+              >
+                <img
+                  v-if="signatureBase64"
+                  :src="signatureBase64"
+                  alt="Firma del Director"
+                  class="max-w-full max-h-full object-contain filter brightness-110"
+                />
+                <div v-else class="text-center text-slate-500 text-xs flex flex-col items-center">
+                  <svg
+                    width="80"
+                    height="35"
+                    viewBox="0 0 120 50"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="opacity-30 mb-1"
+                  >
+                    <path
+                      d="M12 28C22 13 32 40 45 23C58 6 62 42 80 18C98 -2 102 46 112 25"
+                      stroke="#94a3b8"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M35 15C48 10 70 8 85 14"
+                      stroke="#94a3b8"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  <span>Firma por Defecto (SVG)</span>
+                </div>
+              </div>
+
+              <!-- Button CTA -->
+              <div class="flex-grow space-y-3 w-full sm:w-auto">
+                <button
+                  class="w-full sm:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-body text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 border border-blue-500/25"
+                  @click="handleUploadSignature"
+                >
+                  <span class="material-symbols-outlined text-sm">cloud_upload</span>
+                  <span>Cargar Imagen de Firma</span>
+                </button>
+                <p class="text-[10px] text-slate-400 leading-normal">
+                  Soporta formatos PNG, JPG y JPEG. Se recomienda fondo transparente para una
+                  impresión óptima en el reporte de validez institucional.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -122,3 +203,31 @@
     </div>
   </main>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const signatureBase64 = ref(null)
+
+const loadSignature = async () => {
+  if (window.electron && window.electron.getSignature) {
+    const sig = await window.electron.getSignature()
+    if (sig) {
+      signatureBase64.value = sig
+    }
+  }
+}
+
+const handleUploadSignature = async () => {
+  if (window.electron && window.electron.uploadSignature) {
+    const res = await window.electron.uploadSignature()
+    if (res && res.success) {
+      signatureBase64.value = res.base64
+    }
+  }
+}
+
+onMounted(() => {
+  loadSignature()
+})
+</script>

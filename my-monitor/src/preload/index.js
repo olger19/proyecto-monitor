@@ -6,6 +6,8 @@ try {
     getWeeklySummary: () => ipcRenderer.invoke('get-weekly-summary'),
     downloadPdfReport: () => ipcRenderer.invoke('download-pdf-report'),
     getRecentTests: () => ipcRenderer.invoke('get-recent-tests'),
+    uploadSignature: () => ipcRenderer.invoke('upload-signature'),
+    getSignature: () => ipcRenderer.invoke('get-signature'),
     onData: (callback) => {
       // Eliminamos todos los escuchadores previos para evitar duplicidad
       ipcRenderer.removeAllListeners('engine-data')

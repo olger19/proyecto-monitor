@@ -1,5 +1,5 @@
 import { spawn } from 'child_process'
-import { existsSync, writeFileSync } from 'fs'
+import { existsSync, writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { initDatabase, saveMeasurement, getWeeklySummary, getRawMeasurements } from './db'
@@ -163,6 +163,44 @@ function createWindow() {
     return getRawMeasurements().slice(0, 5)
   })
 
+  // Handler para subir la imagen de la firma (la lee y la guarda en Base64)
+  ipcMain.handle('upload-signature', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Seleccionar imagen de la firma',
+      filters: [{ name: 'Imágenes (PNG, JPG, JPEG)', extensions: ['png', 'jpg', 'jpeg'] }],
+      properties: ['openFile']
+    })
+    if (!canceled && filePaths.length > 0) {
+      try {
+        const filePath = filePaths[0]
+        const ext = filePath.split('.').pop().toLowerCase()
+        const base64Data = readFileSync(filePath, 'base64')
+        const dataUrl = `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${base64Data}`
+
+        const destPath = join(app.getPath('userData'), 'signature_data.txt')
+        writeFileSync(destPath, dataUrl, 'utf8')
+        return { success: true, base64: dataUrl }
+      } catch (e) {
+        console.error('Error al guardar la firma:', e)
+        return { success: false, error: e.message }
+      }
+    }
+    return { success: false }
+  })
+
+  // Handler para obtener la firma guardada en Base64
+  ipcMain.handle('get-signature', () => {
+    try {
+      const destPath = join(app.getPath('userData'), 'signature_data.txt')
+      if (existsSync(destPath)) {
+        return readFileSync(destPath, 'utf8')
+      }
+    } catch (e) {
+      console.error('Error al leer la firma:', e)
+    }
+    return null
+  })
+
   // Handler para generar el PDF descargable explicativo para no técnicos
   ipcMain.handle('download-pdf-report', async () => {
     const summary = getWeeklySummary()
@@ -171,6 +209,27 @@ function createWindow() {
         success: false,
         error: 'No hay suficientes datos registrados para generar el reporte.'
       }
+    }
+
+    // Cargar firma personalizada si existe en AppData
+    const sigPath = join(app.getPath('userData'), 'signature_data.txt')
+    let signatureHtml = ''
+    if (existsSync(sigPath)) {
+      try {
+        const base64Data = readFileSync(sigPath, 'utf8')
+        signatureHtml = `<img src="${base64Data}" style="height: 50px; max-width: 120px; object-fit: contain; margin-bottom: -10px;" />`
+      } catch (e) {
+        console.error('Error al leer la firma para el PDF:', e)
+      }
+    }
+
+    if (!signatureHtml) {
+      signatureHtml = `
+        <svg width="120" height="50" viewBox="0 0 120 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 28C22 13 32 40 45 23C58 6 62 42 80 18C98 -2 102 46 112 25" stroke="#005db5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M35 15C48 10 70 8 85 14" stroke="#005db5" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      `
     }
 
     const totalDays = summary.length
@@ -457,8 +516,29 @@ function createWindow() {
             `
             })
             .join('')}
-        </tbody>
       </table>
+
+      <!-- Bloque de Firmas Híbrido (Firma Escaneada Vectorial + Espacio de Firma Manual) -->
+      <div style="margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end; page-break-inside: avoid;">
+        <!-- Lado Izquierdo: Firma Física para el Revisor -->
+        <div style="text-align: center; width: 220px; color: #64748b; font-size: 11px;">
+          <div style="border-top: 1px solid #cbd5e1; margin-top: 60px; padding-top: 6px; font-weight: bold; color: #334155;">
+            Firma del Revisor Autorizado
+          </div>
+          <div>Representante del Colegio / Institución</div>
+        </div>
+        
+        <!-- Lado Derecho: Firma Digital Estática Vectorial para el Director -->
+        <div style="text-align: center; width: 220px; color: #64748b; font-size: 11px;">
+          <div style="height: 50px; display: flex; align-items: center; justify-content: center; margin-bottom: -15px;">
+            ${signatureHtml}
+          </div>
+          <div style="border-top: 1px solid #cbd5e1; margin-top: 15px; padding-top: 6px; font-weight: bold; color: #334155;">
+            Firma del Director de TI
+          </div>
+          <div>Área de Infraestructura Digital</div>
+        </div>
+      </div>
     </body>
     </html>
     `
