@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/Vitest-729B1B?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest" />
 </p>
 
-Este es el repositorio del **Sistema de Monitoreo y Diagnóstico de Red para la Sustentación de Tesis**. El sistema vigila el estado del servicio contratado de internet, calcula el **Índice de Calidad de Red (ICR)** en base a umbrales normativos, permite configurar las firmas de la institución y genera reportes consolidados semanales en PDF.
+Este es el repositorio del **Sistema de Monitoreo y Diagnóstico de Red**. El sistema vigila el estado del servicio contratado de internet, calcula el **Índice de Calidad de Red (ICR)** en base a umbrales normativos, permite configurar las firmas de la institución y genera reportes consolidados semanales en PDF.
 
 ---
 
