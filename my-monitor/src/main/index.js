@@ -1,3 +1,10 @@
+/**
+ * @file index.js
+ * @description Orquestador del Proceso Principal de Electron y Generación de PDF
+ * @author Olger Antonio Jose Quispe Vilca
+ * @university Universidad La Salle
+ * @copyright Todos los derechos reservados (C) 2026
+ */
 import { spawn } from 'child_process'
 import { existsSync, writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'

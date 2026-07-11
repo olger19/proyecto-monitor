@@ -1,3 +1,10 @@
+/*
+ * @file main.go
+ * @description Motor de diagnóstico y monitoreo de red (Go Engine)
+ * @author Olger Antonio Jose Quispe Vilca
+ * @university Universidad La Salle
+ * @copyright Todos los derechos reservados (C) 2026
+ */
 package main
 
 import (

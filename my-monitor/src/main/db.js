@@ -1,3 +1,10 @@
+/**
+ * @file db.js
+ * @description Gestor de base de datos resiliente (SQLite / JSON Fallback)
+ * @author Olger Antonio Jose Quispe Vilca
+ * @university Universidad La Salle
+ * @copyright Todos los derechos reservados (C) 2026
+ */
 import Database from 'better-sqlite3'
 import { join } from 'path'
 import { app } from 'electron'
